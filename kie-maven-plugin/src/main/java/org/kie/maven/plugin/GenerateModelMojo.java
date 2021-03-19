@@ -73,6 +73,9 @@ import static org.kie.maven.plugin.ExecModelMode.isModelCompilerInClassPath;
         defaultPhase = LifecyclePhase.COMPILE)
 public class GenerateModelMojo extends AbstractDMNValidationAwareMojo {
 
+    public static final String GENERATED_FILES = "GenerateModelMojo:generatedFiles";
+    public static final String RELEASE_ID = "GenerateModelMojo:releaseId";
+
     public static PathMatcher drlFileMatcher = FileSystems.getDefault().getPathMatcher("glob:**.drl");
 
     @Parameter(defaultValue = "${session}", required = true, readonly = true)
@@ -184,6 +187,8 @@ public class GenerateModelMojo extends AbstractDMNValidationAwareMojo {
                     throw new MojoExecutionException("Unable to write file", e);
                 }
             }
+            project.setContextValue(GENERATED_FILES, generatedFiles);
+            project.setContextValue(RELEASE_ID, kieModule.getReleaseId());
 
             // copy the META-INF packages file
             final String path = CanonicalKieModule.getModelFileWithGAV(kieModule.getReleaseId());
@@ -199,21 +204,6 @@ public class GenerateModelMojo extends AbstractDMNValidationAwareMojo {
             } catch (IOException e) {
                 e.printStackTrace();
                 throw new MojoExecutionException("Unable to write file", e);
-            }
-
-            // copy META-INF "generated-class-names" file
-            try {
-                final String genClassNamesPathStr = CanonicalKieModule.getGeneratedClassNamesFile(kieModule.getReleaseId());
-                final MemoryFile genClassNamesMemoryFile = (MemoryFile) mfs.getFile(genClassNamesPathStr);
-                final String genClassNamesMemoryFolderPath = genClassNamesMemoryFile.getFolder().getPath().toPortableString();
-                final Path genClassNamesDestinationPath = Paths.get(targetDirectory.getPath(), "classes", genClassNamesMemoryFolderPath, genClassNamesMemoryFile.getName());
-
-                if (!Files.exists(genClassNamesDestinationPath.getParent())) {
-                    Files.createDirectories(genClassNamesDestinationPath.getParent());
-                }
-                Files.copy(genClassNamesMemoryFile.getContents(), genClassNamesDestinationPath, StandardCopyOption.REPLACE_EXISTING);
-            } catch (IOException e) {
-                getLog().warn("Failed to produce generated-class-names file. But it's not critical so you can still use the created kjar", e);
             }
 
             if (shallPerformDMNDTAnalysis()) {
@@ -281,15 +271,6 @@ public class GenerateModelMojo extends AbstractDMNValidationAwareMojo {
                     modelFiles.addAll( result.getModelFiles() );
                     modelsByKBase.put( modelBuilder.getKey(), result.getModelFiles() );
                 }
-
-                // Note: this doesn't cover inner classes but performance impact should be negligible
-                Set<String> generatedClassPaths = new HashSet<>(srcMfs.getFileNames());
-                Set<String> generatedClassNames = generatedClassPaths.stream()
-                                   .filter(path -> path.startsWith(SRC_FOLDER) && path.endsWith(".java"))
-                                   .map(path -> path.substring(SRC_FOLDER.length() + 1))
-                                   .map(ClassUtils::convertResourceToClassName)
-                                   .collect(Collectors.toSet());
-                modelWriter.writeGeneratedClassNamesFile(generatedClassNames, trgMfs, getInternalKieModule().getReleaseId());
 
                 InternalKieModule kieModule = getInternalKieModule();
                 ModelSourceClass modelSourceClass = new ModelSourceClass( kieModule.getReleaseId(), kieModule.getKieModuleModel().getKieBaseModels(), modelsByKBase, hasDynamicClassLoader() );

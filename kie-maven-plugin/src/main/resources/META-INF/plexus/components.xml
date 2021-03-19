@@ -15,6 +15,7 @@
                         org.kie:kie-maven-plugin:generateDMNModel,
                         org.kie:kie-maven-plugin:generatePMMLModel,
                         org.apache.maven.plugins:maven-compiler-plugin:compile,
+                        org.kie:kie-maven-plugin:generateModel-post-compile,
                         org.kie:kie-maven-plugin:build,
                         org.kie:kie-maven-plugin:generateANC,
                         org.apache.maven.plugins:maven-compiler-plugin:compile
