@@ -292,7 +292,7 @@ public class JSONMarshaller implements Marshaller {
             deserializeObjectMapper.registerModule(modDeser);
             deserializeObjectMapper.setConfig(deserializeObjectMapper.getDeserializationConfig().with(introspectorPair));
             // Don't use withClassLoader() because we rely on thread context classloader. We use classLoader only for fallback
-            deserializeObjectMapper.setTypeFactory(FallbackableTypeFactory.defaultInstance().withFallbackClassLoader(classLoader));
+            deserializeObjectMapper.setTypeFactory(new FallbackableTypeFactory(classLoader));
         }
 
         if (formatDate) {
